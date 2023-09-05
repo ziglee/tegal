@@ -1,11 +1,15 @@
 package net.cassiolandim.tegal
 
+import java.util.*
 import kotlin.random.Random
 
 data class Die(
-    var faceUp: DieFace = DieFace.MOVE_SHIP
+    val faceUp: DieFace = DieFace.entries.toTypedArray()[Random.nextInt(5)],
+    val id: UUID = UUID.randomUUID(),
 ) {
-    fun roll() {
-        faceUp = DieFace.entries.toTypedArray()[Random.nextInt(5)]
+    companion object {
+        fun roll(num: Int): List<Die> {
+            return (1..num).map { Die() }
+        }
     }
 }

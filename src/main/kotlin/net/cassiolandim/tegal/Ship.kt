@@ -1,44 +1,63 @@
 package net.cassiolandim.tegal
 
+import net.cassiolandim.tegal.exceptions.IllegalMoveException
+import java.util.*
+
 class Ship(
     val player: Player,
-    var currentLocation: ShipLocation
+    val id: UUID = UUID.randomUUID(),
 ) {
-    fun moveToPlayer() {
+    private var _currentLocation: ShipLocation = player
+    val currentLocation: ShipLocation
+        get() = _currentLocation
+
+    fun resetLocation() {
+        _currentLocation = player
+    }
+    
+    fun leaveOldLocationAndMoveToPlayer() {
         if (currentLocation is Player) throw IllegalMoveException("Cannot move to same location")
 
         leaveOldLocation()
 
-        TODO()
+        _currentLocation = player
     }
 
-    fun moveToPlanetSurface(planet: Planet) {
+    fun leaveOldLocationAndMoveToPlanetSurface(planet: Planet) {
         if (planet == currentLocation) throw IllegalMoveException("Cannot move to same location")
         if (planet.surfaceShips.map { it.player }
                 .contains(player)) throw IllegalMoveException("Planet surface already has this player on it")
 
         leaveOldLocation()
 
-        planet.surfaceShips.add(this)
-        currentLocation = planet
+        planet.addToSurface(this)
+        _currentLocation = planet
     }
 
-    fun moveToPlanetOrbit(planet: Planet) {
+    fun leaveOldLocationAndMoveToPlanetOrbit(planet: Planet): PlanetTrackProgress {
         if (planet == currentLocation) throw IllegalMoveException("Cannot move to same location")
         if (planet.orbitsProgresses.map { it.ship.player }
                 .contains(player)) throw IllegalMoveException("Planet orbit already has this player on it")
 
         leaveOldLocation()
 
-        val newLocation = PlanetTrackProgress(this, planet)
-        planet.orbitsProgresses.add(newLocation)
-        currentLocation = newLocation
+        val newLocation = planet.addToOrbit(this)
+        _currentLocation = newLocation
+
+        return newLocation
+    }
+
+    fun incrementProgressOnOrbit() {
+        val location = currentLocation
+        if (location is PlanetTrackProgress) {
+            location.increment()
+        } else throw IllegalMoveException("Ship is not on an orbit")
     }
 
     private fun leaveOldLocation() {
         when (val oldLocation = currentLocation) {
-            is Planet -> oldLocation.surfaceShips.remove(this)
-            is PlanetTrackProgress -> oldLocation.planet.orbitsProgresses.remove(oldLocation)
+            is Planet -> oldLocation.removeFromSurface(this)
+            is PlanetTrackProgress -> oldLocation.planet.removeFromOrbit(oldLocation)
         }
     }
 }
