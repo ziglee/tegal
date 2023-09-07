@@ -1,8 +1,11 @@
 package net.cassiolandim.tegal
 
+import java.util.*
+
 open class Planet(
     val game: Game,
     val info: PlanetInfo,
+    val id: UUID = UUID.randomUUID(),
 ) : ShipLocation {
 
     private val _surfaceShips: MutableSet<Ship> = mutableSetOf()

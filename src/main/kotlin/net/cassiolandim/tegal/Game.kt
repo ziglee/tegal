@@ -22,6 +22,7 @@ class Game(
     var activateDie: Die? = null
     var activationBay = listOf<Die>()
     var hasConvertedDice = false
+    var hasUsedFreeReroll = false
 
     fun removePlanetFromGame(planet: Planet) {
         _planetsInGame.remove(planet)
@@ -33,19 +34,47 @@ class Game(
     }
 
     fun rollDice() {
+        if (rolledDice.isNotEmpty())  throw IllegalMoveException("Player already rolled his dice")
         rolledDice = Die.roll(currentPlayer.activeDice)
     }
 
-    fun activateMoveShipDie(dieId: UUID) {
+    fun fakeRollDiceAllMoveUp() {
+        rolledDice = (1..currentPlayer.activeDice).map {
+            Die(faceUp = DieFace.MOVE_SHIP)
+        }
+    }
+
+    fun freeRerollDice() {
+        if (rolledDice.isEmpty())  throw IllegalMoveException("There are no dice left to be re-rolled")
+        if (hasUsedFreeReroll) throw IllegalMoveException("Player already used its free re-roll this turn")
+        rolledDice = Die.roll(rolledDice.size)
+        hasUsedFreeReroll = true
+    }
+
+    fun paidReroll(diceToRerollIds: Set<UUID>) {
+        if (rolledDice.isEmpty())  throw IllegalMoveException("There are no dice left to be re-rolled")
+
+        currentPlayer.spendEnergyTokens(diceToRerollIds.size)
+
+        val remainingDice = rolledDice.filterNot { diceToRerollIds.contains(it.id) }
+        rolledDice = remainingDice + Die.roll(diceToRerollIds.size)
+    }
+
+    fun activateDieMoveShipToPlanetSurface(dieId: UUID, shipId: UUID, planetId: UUID) {
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.MOVE_SHIP) throw IllegalMoveException("Chosen die has wrong face up")
+        val ship = currentPlayer.ships.findById(shipId)
+        val planet = planetsInGame.findById(planetId)
+
+        ship.leaveOldLocationAndMoveToPlanetSurface(planet)
 
         activateDie = die
-
-        // TODO
+        activationBay += die
+        rolledDice -= die
     }
 }
 
 fun List<Player>.findById(id: UUID) = find { it.id == id } ?: throw EntityNotFoundException("Player $id not found")
 fun List<Die>.findById(id: UUID) = find { it.id == id } ?: throw EntityNotFoundException("Die $id not found")
 fun Set<Ship>.findById(id: UUID) = find { it.id == id } ?: throw EntityNotFoundException("Ship $id not found")
+fun Set<Planet>.findById(id: UUID) = find { it.id == id } ?: throw EntityNotFoundException("Planet $id not found")
