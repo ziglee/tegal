@@ -13,7 +13,7 @@ class PlayerTest {
         assertEquals(1, player.empireLevel)
         assertEquals(1, player.cultureLevel)
         assertEquals(2, player.energyLevel)
-        assertEquals(4, player.activeDice)
+        assertEquals(4, player.diceCount)
         assertEquals(0, player.galaxyPoints)
         assertEquals(2, player.ships.size)
     }
@@ -24,31 +24,31 @@ class PlayerTest {
 
         player.incrementEmpireTokens()
         assertEquals(2, player.empireLevel)
-        assertEquals(5, player.activeDice)
+        assertEquals(5, player.diceCount)
         assertEquals(2, player.ships.size)
         assertEquals(1, player.galaxyPoints)
 
         player.incrementEmpireTokens()
         assertEquals(3, player.empireLevel)
-        assertEquals(5, player.activeDice)
+        assertEquals(5, player.diceCount)
         assertEquals(3, player.ships.size)
         assertEquals(2, player.galaxyPoints)
 
         player.incrementEmpireTokens()
         assertEquals(4, player.empireLevel)
-        assertEquals(6, player.activeDice)
+        assertEquals(6, player.diceCount)
         assertEquals(3, player.ships.size)
         assertEquals(3, player.galaxyPoints)
 
         player.incrementEmpireTokens()
         assertEquals(5, player.empireLevel)
-        assertEquals(6, player.activeDice)
+        assertEquals(6, player.diceCount)
         assertEquals(4, player.ships.size)
         assertEquals(5, player.galaxyPoints)
 
         player.incrementEmpireTokens()
         assertEquals(6, player.empireLevel)
-        assertEquals(7, player.activeDice)
+        assertEquals(7, player.diceCount)
         assertEquals(4, player.ships.size)
         assertEquals(8, player.galaxyPoints)
     }
@@ -59,7 +59,7 @@ class PlayerTest {
         val energyLevel = player.energyLevel
         val amount = 1
 
-        player.spendEnergyTokens(amount)
+        player.spendEnergy(amount)
 
         assertEquals(energyLevel - amount, player.energyLevel)
     }
@@ -70,18 +70,18 @@ class PlayerTest {
         val cultureLevel = player.cultureLevel
         val amount = 1
 
-        player.spendCultureTokens(amount)
+        player.spendCulture(amount)
 
         assertEquals(cultureLevel - amount, player.cultureLevel)
     }
 
     @Test(expected = IllegalMoveException::class)
     fun given_player_has_not_enough_tokens_when_spending_culture_tokens() {
-        Player("Cássio").spendCultureTokens(4)
+        Player("Cássio").spendCulture(4)
     }
 
     @Test(expected = IllegalMoveException::class)
     fun given_player_has_not_enough_tokens_when_spending_energy_tokens() {
-        Player("Cássio").spendCultureTokens(4)
+        Player("Cássio").spendCulture(4)
     }
 }

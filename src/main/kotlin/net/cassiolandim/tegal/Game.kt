@@ -8,21 +8,27 @@ class Game(
     vararg playersNames: String,
 ) {
     val players: List<Player> = playersNames.map { Player(it) }
-    private var currentPlayerIndex: Int = 0
-    private val poolOfPlanets = PlanetInfo.planets()
+    val poolOfPlanets = PlanetInfo.planets()
     private val _planetsInGame = poolOfPlanets.takeRandom(
         this,
         if (players.size == 5) 6 else players.size + 2
     )
+
+    private var currentPlayerIndex: Int = 0
+    private var dicePairToConvert: Pair<Die, Die>? = null
+    private var hasUsedFreeReroll = false
+    private var diceToAddToPlayerAfterTurnEnd = 0
+
+    var rolledDice = Die.roll(currentPlayer.diceCount)
+    var lastActivatedDie: Die? = null
+    val activationBay = mutableListOf<Die>()
+    var roundCount = 1
+    var ended = false
+
     val planetsInGame: Set<Planet>
         get() = _planetsInGame
     val currentPlayer: Player
         get() = players[currentPlayerIndex]
-    var rolledDice = listOf<Die>()
-    var activateDie: Die? = null
-    var activationBay = listOf<Die>()
-    var hasConvertedDice = false
-    var hasUsedFreeReroll = false
 
     fun removePlanetFromGame(planet: Planet) {
         _planetsInGame.remove(planet)
@@ -33,28 +39,22 @@ class Game(
         }
     }
 
-    fun rollDice() {
-        if (rolledDice.isNotEmpty())  throw IllegalMoveException("Player already rolled his dice")
-        rolledDice = Die.roll(currentPlayer.activeDice)
-    }
-
-    fun fakeRollDiceAllMoveUp() {
-        rolledDice = (1..currentPlayer.activeDice).map {
-            Die(faceUp = DieFace.MOVE_SHIP)
-        }
+    private fun rollDice() {
+        if (rolledDice.isNotEmpty()) throw IllegalMoveException("Player already rolled his dice")
+        rolledDice = Die.roll(currentPlayer.diceCount)
     }
 
     fun freeRerollDice() {
-        if (rolledDice.isEmpty())  throw IllegalMoveException("There are no dice left to be re-rolled")
+        if (rolledDice.isEmpty()) throw IllegalMoveException("There are no dice left to be re-rolled")
         if (hasUsedFreeReroll) throw IllegalMoveException("Player already used its free re-roll this turn")
         rolledDice = Die.roll(rolledDice.size)
         hasUsedFreeReroll = true
     }
 
     fun paidReroll(diceToRerollIds: Set<UUID>) {
-        if (rolledDice.isEmpty())  throw IllegalMoveException("There are no dice left to be re-rolled")
+        if (rolledDice.isEmpty()) throw IllegalMoveException("There are no dice left to be re-rolled")
 
-        currentPlayer.spendEnergyTokens(diceToRerollIds.size)
+        currentPlayer.spendEnergy(diceToRerollIds.size)
 
         val remainingDice = rolledDice.filterNot { diceToRerollIds.contains(it.id) }
         rolledDice = remainingDice + Die.roll(diceToRerollIds.size)
@@ -65,12 +65,154 @@ class Game(
         if (die.faceUp != DieFace.MOVE_SHIP) throw IllegalMoveException("Chosen die has wrong face up")
         val ship = currentPlayer.ships.findById(shipId)
         val planet = planetsInGame.findById(planetId)
-
         ship.leaveOldLocationAndMoveToPlanetSurface(planet)
+        afterDieActivation(die)
+    }
 
-        activateDie = die
+    fun activateDieMoveShipToPlanetOrbit(dieId: UUID, shipId: UUID, planetId: UUID) {
+        val die = rolledDice.findById(dieId)
+        if (die.faceUp != DieFace.MOVE_SHIP) throw IllegalMoveException("Chosen die has wrong face up")
+        val ship = currentPlayer.ships.findById(shipId)
+        val planet = planetsInGame.findById(planetId)
+        ship.leaveOldLocationAndMoveToPlanetOrbit(planet)
+        afterDieActivation(die)
+    }
+
+    fun activateDieAcquireEnergy(dieId: UUID) {
+        val die = rolledDice.findById(dieId)
+        if (die.faceUp != DieFace.ACQUIRE_ENERGY) throw IllegalMoveException("Chosen die has wrong face up")
+        val count = currentPlayer.ships.count { ship ->
+            ship.currentLocation.let {
+                when (it) {
+                    is Player -> true
+                    is Planet -> it.info.productionType == PlanetProductionType.ENERGY
+                    is PlanetTrackProgress -> it.planet.info.productionType == PlanetProductionType.ENERGY
+                    else -> false
+                }
+            }
+        }
+        currentPlayer.incrementEnergy(count)
+        afterDieActivation(die)
+    }
+
+    fun activateDieAcquireCulture(dieId: UUID) {
+        val die = rolledDice.findById(dieId)
+        if (die.faceUp != DieFace.ACQUIRE_CULTURE) throw IllegalMoveException("Chosen die has wrong face up")
+        val count = currentPlayer.ships.count { ship ->
+            ship.currentLocation.let {
+                when (it) {
+                    is Planet -> it.info.productionType == PlanetProductionType.CULTURE
+                    is PlanetTrackProgress -> it.planet.info.productionType == PlanetProductionType.CULTURE
+                    else -> false
+                }
+            }
+        }
+        currentPlayer.incrementCulture(count)
+        afterDieActivation(die)
+    }
+
+    fun activateDieAdvanceDiplomacy(dieId: UUID, shipId: UUID) {
+        val die = rolledDice.findById(dieId)
+        if (die.faceUp != DieFace.ADVANCE_DIPLOMACY) throw IllegalMoveException("Chosen die has wrong face up")
+        val ship = currentPlayer.ships.findById(shipId)
+        if (!currentPlayer.ships.contains(ship)) throw IllegalMoveException("Cannot move another player ship")
+        with(ship.currentLocation) {
+            if (this is PlanetTrackProgress && this.planet.info.trackType != PlanetTrackType.DIPLOMACY) throw IllegalMoveException(
+                "Cannot advance diplomacy on this planet"
+            )
+        }
+        ship.incrementProgressOnOrbit()
+        afterDieActivation(die)
+    }
+
+    fun activateDieAdvanceEconomy(dieId: UUID, shipId: UUID) {
+        val die = rolledDice.findById(dieId)
+        if (die.faceUp != DieFace.ADVANCE_ECONOMY) throw IllegalMoveException("Chosen die has wrong face up")
+        val ship = currentPlayer.ships.findById(shipId)
+        if (!currentPlayer.ships.contains(ship)) throw IllegalMoveException("Cannot move another player ship")
+        with(ship.currentLocation) {
+            if (this is PlanetTrackProgress && this.planet.info.trackType != PlanetTrackType.ECONOMY) throw IllegalMoveException(
+                "Cannot advance economy on this planet"
+            )
+        }
+        ship.incrementProgressOnOrbit()
+        afterDieActivation(die)
+    }
+
+    fun activateDieUpgradeEmpire(dieId: UUID, resourceType: PlanetProductionType) {
+        val die = rolledDice.findById(dieId)
+        if (die.faceUp != DieFace.UTILIZE_COLONY) throw IllegalMoveException("Chosen die has wrong face up")
+        currentPlayer.upgradeEmpire(resourceType)
+        if (currentPlayer.empireLevel == 2 ||
+            currentPlayer.empireLevel == 4 ||
+            currentPlayer.empireLevel == 6
+        ) {
+            diceToAddToPlayerAfterTurnEnd++
+        }
+        afterDieActivation(die)
+    }
+
+    fun activateDieUtilizeColony(dieId: UUID, planetId: UUID? = null) {
+        val die = rolledDice.findById(dieId)
+        if (die.faceUp != DieFace.UTILIZE_COLONY) throw IllegalMoveException("Chosen die has wrong face up")
+        if (planetId != null) {
+            val planet = planetsInGame.findById(planetId)
+        }
+        // TODO
+        afterDieActivation(die)
+    }
+
+    fun endTurn() {
+        // TODO only allow to end turn when no one else wants to follow
+
+        // TODO check win condition
+
+        currentPlayer.addDice(diceToAddToPlayerAfterTurnEnd)
+        diceToAddToPlayerAfterTurnEnd = 0
+        hasUsedFreeReroll = false
+        dicePairToConvert = null
+        activationBay.clear()
+        lastActivatedDie = null
+        currentPlayerIndex++
+        rolledDice = emptyList()
+        if (currentPlayerIndex > (players.size - 1)) {
+            currentPlayerIndex = 0
+            roundCount++
+        }
+        rollDice()
+    }
+
+    private fun afterDieActivation(die: Die) {
+        lastActivatedDie = die
         activationBay += die
         rolledDice -= die
+    }
+
+    fun convertDie(dicePair: Pair<UUID, UUID>, dieToConvertId: UUID, faceToSet: DieFace) {
+        if (dicePairToConvert != null) throw IllegalMoveException("Player already has converted die this turn")
+        val die1 = rolledDice.findById(dicePair.first)
+        val die2 = rolledDice.findById(dicePair.second)
+        val dieToConvert = rolledDice.findById(dieToConvertId)
+
+        dicePairToConvert = Pair(die1, die2)
+        dieToConvert.faceUp = faceToSet
+        rolledDice -= die1
+        rolledDice -= die2
+    }
+
+    /**
+     * FOR TESTING ONLY FUNCTIONS
+     */
+
+    fun fakeRollDiceAll(dieFace: DieFace) {
+        rolledDice = (1..currentPlayer.diceCount).map {
+            Die(faceUp = dieFace)
+        }
+    }
+
+    fun replacePlanetsInGame(planets: Set<Planet>) {
+        _planetsInGame.clear()
+        _planetsInGame.addAll(planets)
     }
 }
 

@@ -8,10 +8,15 @@ data class Player(
     val id: UUID = UUID.randomUUID(),
 ) : ShipLocation {
 
+    companion object {
+        private const val MAX_ENERGY_CULTURE_LEVEL = 7
+    }
+
     private val _colonizedPlanets = mutableSetOf<Planet>()
     private var _empireLevel: Int = 1
     private var _energyLevel: Int = 2
     private var _cultureLevel: Int = 1
+    private var _diceCount: Int = 4
 
     val ships = mutableSetOf(
         Ship(this),
@@ -35,13 +40,8 @@ data class Player(
             6 -> 8
             else -> 0
         }
-    val activeDice: Int
-        get() = when (empireLevel) {
-            2, 3 -> 5
-            4, 5 -> 6
-            6 -> 7
-            else -> 4
-        }
+    val diceCount: Int
+        get() = _diceCount
     val totalPoints: Int
         get() = colonizedPlanets.sumOf { it.info.pointsWorth } + galaxyPoints
 
@@ -60,13 +60,36 @@ data class Player(
         ships.add(Ship(this))
     }
 
-    fun spendEnergyTokens(amount: Int) {
+    fun addDice(amount: Int) {
+        _diceCount += amount
+    }
+
+    fun spendEnergy(amount: Int) {
         if (energyLevel < amount)  throw IllegalMoveException("Player has no sufficient energy tokens to spend")
         _energyLevel -= amount
     }
 
-    fun spendCultureTokens(amount: Int) {
+    fun spendCulture(amount: Int) {
         if (cultureLevel < amount)  throw IllegalMoveException("Player has no sufficient culture tokens to spend")
         _cultureLevel -= amount
+    }
+
+    fun incrementEnergy(amount: Int) {
+        _energyLevel += amount
+        if (_energyLevel > MAX_ENERGY_CULTURE_LEVEL) _energyLevel = MAX_ENERGY_CULTURE_LEVEL
+    }
+
+    fun incrementCulture(amount: Int) {
+        _cultureLevel += amount
+        if (_cultureLevel > MAX_ENERGY_CULTURE_LEVEL) _cultureLevel = MAX_ENERGY_CULTURE_LEVEL
+    }
+
+    fun upgradeEmpire(resourceType: PlanetProductionType) {
+        val nextLevelRequiredAmount = empireLevel + 1
+        when (resourceType) {
+            PlanetProductionType.ENERGY -> spendEnergy(nextLevelRequiredAmount)
+            PlanetProductionType.CULTURE -> spendCulture(nextLevelRequiredAmount)
+        }
+        _empireLevel++
     }
 }
