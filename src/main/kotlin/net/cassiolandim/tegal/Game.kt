@@ -7,6 +7,10 @@ import java.util.*
 class Game(
     vararg playersNames: String,
 ) {
+    companion object {
+        private const val MIN_VICTORY_POINTS_TO_TRIGGER_END_GAME = 21
+    }
+
     val players: List<Player> = playersNames.map { Player(it) }
     val poolOfPlanets = PlanetInfo.planets()
     private val _planetsInGame = poolOfPlanets.takeRandom(
@@ -14,21 +18,30 @@ class Game(
         if (players.size == 5) 6 else players.size + 2
     )
 
-    private var currentPlayerIndex: Int = 0
-    private var dicePairToConvert: Pair<Die, Die>? = null
-    private var hasUsedFreeReroll = false
-    private var diceToAddToPlayerAfterTurnEnd = 0
-
+    var currentPlayerIndex: Int = 0
+        private set
+    var dicePairToConvert: Pair<Die, Die>? = null
+        private set
+    var diceToAddToPlayerAfterTurnEnd = 0
+        private set
+    var playerWhoTriggeredEndGame: Player? = null
+        private set
     var rolledDice = Die.roll(currentPlayer.diceCount)
+        private set
     var lastActivatedDie: Die? = null
+        private set
     val activationBay = mutableListOf<Die>()
     var roundCount = 1
+        private set
     var ended = false
+        private set
 
     val planetsInGame: Set<Planet>
         get() = _planetsInGame
     val currentPlayer: Player
         get() = players[currentPlayerIndex]
+    var hasUsedFreeReroll: Boolean = false
+        private set
 
     fun removePlanetFromGame(planet: Planet) {
         _planetsInGame.remove(planet)
@@ -170,7 +183,7 @@ class Game(
         currentPlayer.incrementEnergy(energyToAcquire)
         currentPlayer.incrementCulture(cultureToAcquire)
 
-        afterActivateDieUtilizeColony(die)
+        afterDieActivation(die)
     }
 
     private fun validateBeforeActivateDieUtilizeColony(die: Die, planetId: UUID, expectedPlanetInfo: PlanetInfo) {
@@ -179,14 +192,14 @@ class Game(
         if (planet.info != expectedPlanetInfo) throw IllegalMoveException("Planet id and instance doesn't match")
     }
 
-    private fun afterActivateDieUtilizeColony(die: Die) {
-        afterDieActivation(die)
-    }
-
     fun endTurn() {
         // TODO only allow to end turn when no one else wants to follow
 
-        // TODO check win condition
+        if (playerWhoTriggeredEndGame != null && players.indexOf(currentPlayer) == players.lastIndex) {
+            // TODO check secret missions and score players
+            ended = true
+            return
+        }
 
         currentPlayer.addDice(diceToAddToPlayerAfterTurnEnd)
         diceToAddToPlayerAfterTurnEnd = 0
@@ -203,10 +216,20 @@ class Game(
         rollDice()
     }
 
+    private fun checkEndOfGameTrigger() {
+        if (playerWhoTriggeredEndGame != null) return
+        if (currentPlayer.totalPoints >= MIN_VICTORY_POINTS_TO_TRIGGER_END_GAME) {
+            playerWhoTriggeredEndGame = currentPlayer
+        }
+        playerWhoTriggeredEndGame = players.find { it.totalPoints >= MIN_VICTORY_POINTS_TO_TRIGGER_END_GAME }
+    }
+
     private fun afterDieActivation(die: Die) {
         lastActivatedDie = die
         activationBay += die
         rolledDice -= die
+
+        checkEndOfGameTrigger()
     }
 
     fun convertDie(dicePair: Pair<UUID, UUID>, dieToConvertId: UUID, faceToSet: DieFace) {

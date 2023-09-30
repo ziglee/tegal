@@ -51,6 +51,7 @@ class GameTest {
         val game = Game("Cássio", "Débora")
 
         assertFalse(game.ended)
+        assertNull(game.playerWhoTriggeredEndGame)
         assertEquals(1, game.roundCount)
         assertEquals(4, game.rolledDice.size)
         assertEquals("Cássio", game.currentPlayer.name)
@@ -115,6 +116,7 @@ class GameTest {
 
         assertEquals(listOf(moveShipDie), game.activationBay)
         assertNotEquals(rolledDice, game.rolledDice)
+        assertTrue(game.hasUsedFreeReroll)
     }
 
     @Test
@@ -276,5 +278,37 @@ class GameTest {
 
         assertEquals(2, game.rolledDice.size)
         assertEquals(DieFace.ACQUIRE_ENERGY, game.rolledDice.findById(dieToConvertId).faceUp)
+    }
+
+    @Test
+    fun check_end_of_game_trigger() {
+        val game = Game("Cássio", "Débora")
+        val firstPlayer = game.players[0]
+        val lastPlayer = game.players[1]
+        val p1 = Planet(game, PlanetInfo.andellouxian6)
+        val p2 = Planet(game, PlanetInfo.aughmoore)
+        val p3 = Planet(game, PlanetInfo.brumbaugh)
+        val p4 = Planet(game, PlanetInfo.bsw101)
+        val p5 = Planet(game, PlanetInfo.clj0517)
+        game.replacePlanetsInGame(setOf(p1, p2, p3, p4, p5))
+        firstPlayer.colonizePlanet(p1)
+        firstPlayer.colonizePlanet(p2)
+        firstPlayer.colonizePlanet(p3)
+        firstPlayer.colonizePlanet(p4)
+        firstPlayer.colonizePlanet(p5)
+
+        game.fakeRollDiceAll(DieFace.ACQUIRE_ENERGY)
+        val die = game.rolledDice.first()
+        game.activateDieAcquireEnergy(die.id) // just to trigger the checkEndOfGame
+
+        assertEquals(firstPlayer, game.playerWhoTriggeredEndGame)
+        assertFalse(game.ended)
+
+        game.endTurn()
+        assertFalse(game.ended)
+
+        game.endTurn()
+        assertEquals(lastPlayer, game.currentPlayer)
+        assertTrue(game.ended)
     }
 }
