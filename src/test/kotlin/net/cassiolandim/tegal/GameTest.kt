@@ -4,6 +4,20 @@ import kotlin.test.*
 
 class GameTest {
 
+    companion object {
+        /**
+         * If the planet is not in game, it will be inserted.
+         */
+        private fun fetchPlanetFromGame(planetInfo: PlanetInfo, game: Game): Planet {
+            var planet = game.planetsInGame.find { it.info.name == planetInfo.name }
+            if (planet == null) {
+                planet = Planet(game, planetInfo)
+                game.replacePlanetsInGame(setOf(planet))
+            }
+            return planet
+        }
+    }
+
     @Test
     fun given_2_players_when_constructing() {
         val game = Game("Cássio", "Débora")
@@ -123,13 +137,7 @@ class GameTest {
     fun activate_acquire_energy_die() {
         val game = Game("Cássio", "Débora")
         val player = game.currentPlayer
-        var planet = game.planetsInGame.find { it.info.productionType == PlanetProductionType.ENERGY }
-        if (planet == null) {
-            val planetInfo = game.poolOfPlanets.find { it.productionType == PlanetProductionType.ENERGY }!!
-            planet = Planet(game, planetInfo)
-            val planets = setOf(planet)
-            game.replacePlanetsInGame(planets)
-        }
+        val planet = fetchPlanetFromGame(PlanetInfo.aughmoore, game)
         player.ships.add(Ship(player))
         player.ships.elementAt(0).leaveOldLocationAndMoveToPlanetSurface(planet)
         player.ships.elementAt(1).leaveOldLocationAndMoveToPlanetOrbit(planet)
@@ -147,13 +155,7 @@ class GameTest {
     fun activate_acquire_culture_die() {
         val game = Game("Cássio", "Débora")
         val player = game.currentPlayer
-        var planet = game.planetsInGame.find { it.info.productionType == PlanetProductionType.CULTURE }
-        if (planet == null) {
-            val planetInfo = game.poolOfPlanets.find { it.productionType == PlanetProductionType.CULTURE }!!
-            planet = Planet(game, planetInfo)
-            val planets = setOf(planet)
-            game.replacePlanetsInGame(planets)
-        }
+        val planet = fetchPlanetFromGame(PlanetInfo.andellouxian6, game)
         player.ships.elementAt(0).leaveOldLocationAndMoveToPlanetSurface(planet)
         player.ships.elementAt(1).leaveOldLocationAndMoveToPlanetOrbit(planet)
         game.fakeRollDiceAll(DieFace.ACQUIRE_CULTURE)
@@ -171,13 +173,7 @@ class GameTest {
         val game = Game("Cássio", "Débora")
         val player = game.currentPlayer
         val ship = player.ships.elementAt(0)
-        var planet = game.planetsInGame.find { it.info.name == PlanetInfo.maia.name }
-        if (planet == null) {
-            val planetInfo = game.poolOfPlanets.find { it.name == PlanetInfo.maia.name }!!
-            planet = Planet(game, planetInfo)
-            val planets = setOf(planet)
-            game.replacePlanetsInGame(planets)
-        }
+        val planet = fetchPlanetFromGame(PlanetInfo.maia, game)
         ship.leaveOldLocationAndMoveToPlanetOrbit(planet)
         val location = ship.currentLocation as PlanetTrackProgress
         game.fakeRollDiceAll(DieFace.ADVANCE_DIPLOMACY)
@@ -195,13 +191,7 @@ class GameTest {
         val game = Game("Cássio", "Débora")
         val player = game.currentPlayer
         val ship = player.ships.elementAt(0)
-        var planet = game.planetsInGame.find { it.info.name == PlanetInfo.andellouxian6.name }
-        if (planet == null) {
-            val planetInfo = game.poolOfPlanets.find { it.name == PlanetInfo.andellouxian6.name }!!
-            planet = Planet(game, planetInfo)
-            val planets = setOf(planet)
-            game.replacePlanetsInGame(planets)
-        }
+        val planet = fetchPlanetFromGame(PlanetInfo.andellouxian6, game)
         ship.leaveOldLocationAndMoveToPlanetOrbit(planet)
         val location = ship.currentLocation as PlanetTrackProgress
         game.fakeRollDiceAll(DieFace.ADVANCE_ECONOMY)
@@ -230,6 +220,33 @@ class GameTest {
 
         game.endTurn()
         assertEquals(5, player.diceCount)
+    }
+
+    @Test
+    fun activate_utilize_colony_andellouxian6_die() {
+        val game = Game("Cássio", "Débora")
+        val player = game.currentPlayer
+        val ship = player.ships.elementAt(0)
+        val planet = fetchPlanetFromGame(PlanetInfo.andellouxian6, game)
+        ship.leaveOldLocationAndMoveToPlanetOrbit(planet)
+        val location = ship.currentLocation as PlanetTrackProgress
+        game.fakeRollDiceAll(DieFace.UTILIZE_COLONY)
+        val die = game.rolledDice.first()
+
+        location.increment()
+        location.increment()
+        location.increment()
+
+        game.activateDieUtilizeColonyAndellouxian6(
+            dieId = die.id,
+            planetId = planet.id,
+            shipToMoveId = ship.id,
+            energyToAcquire = 2,
+            cultureToAcquire = 1
+        )
+
+        assertEquals(4, player.energyLevel)
+        assertEquals(2, player.cultureLevel)
     }
 
     @Test

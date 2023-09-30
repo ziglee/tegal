@@ -152,13 +152,34 @@ class Game(
         afterDieActivation(die)
     }
 
-    fun activateDieUtilizeColony(dieId: UUID, planetId: UUID? = null) {
+    fun activateDieUtilizeColonyAndellouxian6(dieId: UUID, planetId: UUID, shipToMoveId: UUID, energyToAcquire: Int, cultureToAcquire: Int) {
         val die = rolledDice.findById(dieId)
+        validateBeforeActivateDieUtilizeColony(die, planetId, PlanetInfo.andellouxian6)
+
+        if (energyToAcquire < 0) throw IllegalMoveException("Energy to acquire must be greater or equal to zero")
+        if (cultureToAcquire < 0) throw IllegalMoveException("Culture to acquire must be greater or equal to zero")
+
+        val ship = currentPlayer.ships.findById(shipToMoveId)
+        if (!currentPlayer.ships.contains(ship)) throw IllegalMoveException("Cannot move another player ship")
+
+        val currentLocation = ship.currentLocation
+        if (currentLocation !is PlanetTrackProgress) throw IllegalMoveException("Chosen ship isn\'t on orbit of a planet")
+        if ((energyToAcquire + cultureToAcquire) > currentLocation.progress) throw IllegalMoveException("Orbit number is lower than energy and culture to acquire")
+
+        ship.leaveOldLocationAndMoveToPlayer()
+        currentPlayer.incrementEnergy(energyToAcquire)
+        currentPlayer.incrementCulture(cultureToAcquire)
+
+        afterActivateDieUtilizeColony(die)
+    }
+
+    private fun validateBeforeActivateDieUtilizeColony(die: Die, planetId: UUID, expectedPlanetInfo: PlanetInfo) {
         if (die.faceUp != DieFace.UTILIZE_COLONY) throw IllegalMoveException("Chosen die has wrong face up")
-        if (planetId != null) {
-            val planet = planetsInGame.findById(planetId)
-        }
-        // TODO
+        val planet = planetsInGame.findById(planetId)
+        if (planet.info != expectedPlanetInfo) throw IllegalMoveException("Planet id and instance doesn't match")
+    }
+
+    private fun afterActivateDieUtilizeColony(die: Die) {
         afterDieActivation(die)
     }
 

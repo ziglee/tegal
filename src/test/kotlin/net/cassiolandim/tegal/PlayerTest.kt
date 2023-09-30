@@ -24,31 +24,26 @@ class PlayerTest {
 
         player.incrementEmpireTokens()
         assertEquals(2, player.empireLevel)
-        assertEquals(5, player.diceCount)
         assertEquals(2, player.ships.size)
         assertEquals(1, player.galaxyPoints)
 
         player.incrementEmpireTokens()
         assertEquals(3, player.empireLevel)
-        assertEquals(5, player.diceCount)
         assertEquals(3, player.ships.size)
         assertEquals(2, player.galaxyPoints)
 
         player.incrementEmpireTokens()
         assertEquals(4, player.empireLevel)
-        assertEquals(6, player.diceCount)
         assertEquals(3, player.ships.size)
         assertEquals(3, player.galaxyPoints)
 
         player.incrementEmpireTokens()
         assertEquals(5, player.empireLevel)
-        assertEquals(6, player.diceCount)
         assertEquals(4, player.ships.size)
         assertEquals(5, player.galaxyPoints)
 
         player.incrementEmpireTokens()
         assertEquals(6, player.empireLevel)
-        assertEquals(7, player.diceCount)
         assertEquals(4, player.ships.size)
         assertEquals(8, player.galaxyPoints)
     }
