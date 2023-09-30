@@ -75,6 +75,7 @@ class GameTest {
         assertEquals(moveShipDie, game.activatedDie)
         assertEquals(3, game.rolledDice.size)
         assertFalse(game.rolledDice.contains(moveShipDie))
+        assertEquals(planet, ship.currentLocation)
     }
 
     @Test
@@ -383,5 +384,31 @@ class GameTest {
             game.players[1],
             game.currentPlayer
         )
+    }
+
+    @Test
+    fun follow_move_ship_to_planet_surface() {
+        val game = Game("Cássio", "Débora")
+        val firstPlayer = game.players[0]
+        val secondPlayer = game.players[1]
+        val firstShip = firstPlayer.ships.elementAt(0)
+        val secondShip = secondPlayer.ships.elementAt(0)
+        game.fakeRollDiceAll(DieFace.MOVE_SHIP)
+        val moveShipDie = game.rolledDice.first()
+        val planet = game.planetsInGame.elementAt(0)
+        game.activateDieMoveShipToPlanetSurface(
+            dieId = moveShipDie.id,
+            shipId = firstShip.id,
+            planetId = planet.id
+        )
+
+        game.followMoveShipToPlanetSurface(
+            playerId = game.players[1].id,
+            shipId = secondShip.id,
+            planetId = planet.id
+        )
+
+        assertEquals(planet, firstShip.currentLocation)
+        assertEquals(planet, secondShip.currentLocation)
     }
 }

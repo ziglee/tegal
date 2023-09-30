@@ -80,10 +80,28 @@ class Game(
         beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.MOVE_SHIP) throw IllegalMoveException("Chosen die has wrong face up")
-        val ship = currentPlayer.ships.findById(shipId)
+        moveShipToPlanetSurface(
+            player = currentPlayer,
+            shipId = shipId,
+            planetId = planetId
+        )
+        afterDieActivation(die)
+    }
+
+    fun followMoveShipToPlanetSurface(playerId: UUID, shipId: UUID, planetId: UUID) {
+        if (playerId != followingList.firstOrNull()?.id) throw IllegalMoveException("Player must wait correct moment to follow")
+        val player = followingList.first()
+        moveShipToPlanetSurface(
+            player = player,
+            shipId = shipId,
+            planetId = planetId
+        )
+    }
+
+    private fun moveShipToPlanetSurface(player: Player, shipId: UUID, planetId: UUID) {
+        val ship = player.ships.findById(shipId)
         val planet = planetsInGame.findById(planetId)
         ship.leaveOldLocationAndMoveToPlanetSurface(planet)
-        afterDieActivation(die)
     }
 
     fun activateDieMoveShipToPlanetOrbit(dieId: UUID, shipId: UUID, planetId: UUID) {
@@ -175,7 +193,13 @@ class Game(
         afterDieActivation(die)
     }
 
-    fun activateDieUtilizeColonyAndellouxian6(dieId: UUID, planetId: UUID, shipToMoveId: UUID, energyToAcquire: Int, cultureToAcquire: Int) {
+    fun activateDieUtilizeColonyAndellouxian6(
+        dieId: UUID,
+        planetId: UUID,
+        shipToMoveId: UUID,
+        energyToAcquire: Int,
+        cultureToAcquire: Int
+    ) {
         beforeDieActivation()
         val die = rolledDice.findById(dieId)
         validateBeforeActivateDieUtilizeColony(die, planetId, PlanetInfo.andellouxian6)
