@@ -430,4 +430,25 @@ class GameTest {
         assertEquals(4, firstPlayer.energyLevel)
         assertEquals(4, secondPlayer.energyLevel)
     }
+
+    @Test
+    fun follow_acquire_culture() {
+        val game = Game("Cássio", "Débora")
+        val firstPlayer = game.players[0]
+        val secondPlayer = game.players[1]
+        val planet = fetchPlanetFromGame(PlanetInfo.andellouxian6, game)
+        firstPlayer.ships.elementAt(0).leaveOldLocationAndMoveToPlanetSurface(planet)
+        secondPlayer.ships.elementAt(0).leaveOldLocationAndMoveToPlanetSurface(planet)
+        game.fakeRollDiceAll(DieFace.ACQUIRE_CULTURE)
+        game.activateDieAcquireCulture(
+            dieId = game.rolledDice.first().id
+        )
+
+        game.followAcquireCulture(
+            playerId = secondPlayer.id,
+        )
+
+        assertEquals(2, firstPlayer.cultureLevel)
+        assertEquals(2, secondPlayer.cultureLevel)
+    }
 }

@@ -148,7 +148,19 @@ class Game(
         beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.ACQUIRE_CULTURE) throw IllegalMoveException("Chosen die has wrong face up")
-        val count = currentPlayer.ships.count { ship ->
+        acquireCulture(currentPlayer)
+        afterDieActivation(die)
+    }
+
+    fun followAcquireCulture(playerId: UUID) {
+        beforeFollowValidation(playerId, DieFace.ACQUIRE_CULTURE)
+        val player = followingList.first()
+        acquireCulture(player)
+        afterFollowing(player)
+    }
+
+    private fun acquireCulture(player: Player) {
+        val count = player.ships.count { ship ->
             ship.currentLocation.let {
                 when (it) {
                     is Planet -> it.info.productionType == PlanetProductionType.CULTURE
@@ -157,8 +169,7 @@ class Game(
                 }
             }
         }
-        currentPlayer.incrementCulture(count)
-        afterDieActivation(die)
+        player.incrementCulture(count)
     }
 
     fun activateDieAdvanceDiplomacy(dieId: UUID, shipId: UUID) {
