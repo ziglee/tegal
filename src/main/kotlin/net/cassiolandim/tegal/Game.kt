@@ -89,13 +89,14 @@ class Game(
     }
 
     fun followMoveShipToPlanetSurface(playerId: UUID, shipId: UUID, planetId: UUID) {
-        if (playerId != followingList.firstOrNull()?.id) throw IllegalMoveException("Player must wait correct moment to follow")
+        beforeFollowValidation(playerId, DieFace.MOVE_SHIP)
         val player = followingList.first()
         moveShipToPlanetSurface(
             player = player,
             shipId = shipId,
             planetId = planetId
         )
+        afterFollowing(player)
     }
 
     private fun moveShipToPlanetSurface(player: Player, shipId: UUID, planetId: UUID) {
@@ -118,7 +119,19 @@ class Game(
         beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.ACQUIRE_ENERGY) throw IllegalMoveException("Chosen die has wrong face up")
-        val count = currentPlayer.ships.count { ship ->
+        acquireEnergy(currentPlayer)
+        afterDieActivation(die)
+    }
+
+    fun followAcquireEnergy(playerId: UUID) {
+        beforeFollowValidation(playerId, DieFace.ACQUIRE_ENERGY)
+        val player = followingList.first()
+        acquireEnergy(player)
+        afterFollowing(player)
+    }
+
+    private fun acquireEnergy(player: Player) {
+        val count = player.ships.count { ship ->
             ship.currentLocation.let {
                 when (it) {
                     is Player -> true
@@ -128,8 +141,7 @@ class Game(
                 }
             }
         }
-        currentPlayer.incrementEnergy(count)
-        afterDieActivation(die)
+        player.incrementEnergy(count)
     }
 
     fun activateDieAcquireCulture(dieId: UUID) {
@@ -253,16 +265,26 @@ class Game(
         rollDice()
     }
 
-    private fun checkEndOfGameTrigger() {
+    private fun checkEndOfGameTrigger(player: Player) {
         if (playerWhoTriggeredEndGame != null) return
-        if (currentPlayer.totalPoints >= MIN_VICTORY_POINTS_TO_TRIGGER_END_GAME) {
-            playerWhoTriggeredEndGame = currentPlayer
+        if (player.totalPoints >= MIN_VICTORY_POINTS_TO_TRIGGER_END_GAME) {
+            playerWhoTriggeredEndGame = player
         }
-        playerWhoTriggeredEndGame = players.find { it.totalPoints >= MIN_VICTORY_POINTS_TO_TRIGGER_END_GAME }
     }
 
     private fun beforeDieActivation() {
         if (activatedDie != null) throw IllegalMoveException("Player already activated a die")
+    }
+
+    private fun beforeFollowValidation(playerId: UUID, dieFace: DieFace) {
+        if (activatedDie == null) throw IllegalMoveException("There is no activated die now")
+        if (activatedDie!!.faceUp != dieFace) throw IllegalMoveException("Activated die has wrong face up")
+        if (playerId != followingList.first().id) throw IllegalMoveException("Player must wait correct moment to follow")
+    }
+
+    private fun afterFollowing(player: Player) {
+        checkEndOfGameTrigger(player)
+        _followingList.removeFirst()
     }
 
     private fun afterDieActivation(die: Die) {
@@ -270,7 +292,7 @@ class Game(
         activationBay += die
         rolledDice -= die
 
-        checkEndOfGameTrigger()
+        checkEndOfGameTrigger(currentPlayer)
         buildFollowingList()
         checkAutomaticEndTurn()
         if (followingList.isEmpty()) {

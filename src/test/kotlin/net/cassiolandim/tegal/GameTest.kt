@@ -410,5 +410,24 @@ class GameTest {
 
         assertEquals(planet, firstShip.currentLocation)
         assertEquals(planet, secondShip.currentLocation)
+        assertTrue(game.followingList.isEmpty())
+    }
+
+    @Test
+    fun follow_acquire_energy() {
+        val game = Game("Cássio", "Débora")
+        val firstPlayer = game.players[0]
+        val secondPlayer = game.players[1]
+        game.fakeRollDiceAll(DieFace.ACQUIRE_ENERGY)
+        game.activateDieAcquireEnergy(
+            dieId = game.rolledDice.first().id
+        )
+
+        game.followAcquireEnergy(
+            playerId = secondPlayer.id,
+        )
+
+        assertEquals(4, firstPlayer.energyLevel)
+        assertEquals(4, secondPlayer.energyLevel)
     }
 }
