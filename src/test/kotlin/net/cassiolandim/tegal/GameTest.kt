@@ -72,7 +72,7 @@ class GameTest {
         )
 
         assertEquals(listOf(moveShipDie), game.activationBay)
-        assertEquals(moveShipDie, game.lastActivatedDie)
+        assertEquals(moveShipDie, game.activatedDie)
         assertEquals(3, game.rolledDice.size)
         assertFalse(game.rolledDice.contains(moveShipDie))
     }
@@ -92,7 +92,7 @@ class GameTest {
         )
 
         assertEquals(listOf(moveShipDie), game.activationBay)
-        assertEquals(moveShipDie, game.lastActivatedDie)
+        assertEquals(moveShipDie, game.activatedDie)
         assertEquals(3, game.rolledDice.size)
         assertFalse(game.rolledDice.contains(moveShipDie))
     }
@@ -220,7 +220,8 @@ class GameTest {
         assertEquals(4, player.diceCount)
         assertEquals(oldEmpireLevel + 1, player.empireLevel)
 
-        game.endTurn()
+        game.skipActiveDieFollowing(game.players[1].id)
+        game.endTurn(player.id)
         assertEquals(5, player.diceCount)
     }
 
@@ -256,12 +257,12 @@ class GameTest {
         val game = Game("Cássio", "Débora")
         val rolledDice = game.rolledDice
 
-        game.endTurn()
+        game.endTurn(game.currentPlayer.id)
         assertNotEquals(rolledDice, game.rolledDice)
         assertEquals("Débora", game.currentPlayer.name)
         assertEquals(1, game.roundCount)
 
-        game.endTurn()
+        game.endTurn(game.currentPlayer.id)
         assertEquals("Cássio", game.currentPlayer.name)
         assertEquals(2, game.roundCount)
     }
@@ -304,11 +305,83 @@ class GameTest {
         assertEquals(firstPlayer, game.playerWhoTriggeredEndGame)
         assertFalse(game.ended)
 
-        game.endTurn()
+        game.skipActiveDieFollowing(game.players[1].id)
+        game.endTurn(game.currentPlayer.id)
         assertFalse(game.ended)
 
-        game.endTurn()
+        game.endTurn(game.currentPlayer.id)
         assertEquals(lastPlayer, game.currentPlayer)
         assertTrue(game.ended)
+    }
+
+    @Test
+    fun build_following_list() {
+        val game = Game("Cássio", "Débora", "Cíntia", "Miguel", "Vitor")
+        game.fakeRollDiceAll(DieFace.ACQUIRE_ENERGY)
+        val die = game.rolledDice.first()
+
+        game.players[2].spendCulture(1)
+        game.activateDieAcquireEnergy(die.id)
+
+        assertEquals(
+            listOf(
+                game.players[1],
+                game.players[3],
+                game.players[4],
+            ),
+            game.followingList
+        )
+    }
+
+    @Test
+    fun skip_active_die_following() {
+        val game = Game("Cássio", "Débora", "Cíntia", "Miguel", "Vitor")
+        game.fakeRollDiceAll(DieFace.ACQUIRE_ENERGY)
+
+        game.players[2].spendCulture(1)
+        game.activateDieAcquireEnergy(game.rolledDice.first().id)
+
+        game.skipActiveDieFollowing(game.players[1].id)
+        assertEquals(
+            listOf(
+                game.players[3],
+                game.players[4],
+            ),
+            game.followingList
+        )
+
+        game.skipActiveDieFollowing(game.players[3].id)
+        assertEquals(
+            listOf(
+                game.players[4],
+            ),
+            game.followingList
+        )
+
+        game.skipActiveDieFollowing(game.players[4].id)
+        assertEquals(
+            emptyList(),
+            game.followingList
+        )
+    }
+
+    @Test
+    fun given_no_player_has_culture_after_activating_all_dice_must_end_turn() {
+        val game = Game("Cássio", "Débora", "Cíntia", "Miguel", "Vitor")
+        game.fakeRollDiceAll(DieFace.ACQUIRE_ENERGY)
+
+        game.players[1].spendCulture(1)
+        game.players[2].spendCulture(1)
+        game.players[3].spendCulture(1)
+        game.players[4].spendCulture(1)
+        game.activateDieAcquireEnergy(game.rolledDice.first().id)
+        game.activateDieAcquireEnergy(game.rolledDice.first().id)
+        game.activateDieAcquireEnergy(game.rolledDice.first().id)
+        game.activateDieAcquireEnergy(game.rolledDice.first().id)
+
+        assertEquals(
+            game.players[1],
+            game.currentPlayer
+        )
     }
 }

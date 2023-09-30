@@ -11,6 +11,7 @@ class Game(
         private const val MIN_VICTORY_POINTS_TO_TRIGGER_END_GAME = 21
     }
 
+    private val _followingList = mutableListOf<Player>()
     val players: List<Player> = playersNames.map { Player(it) }
     val poolOfPlanets = PlanetInfo.planets()
     private val _planetsInGame = poolOfPlanets.takeRandom(
@@ -28,7 +29,7 @@ class Game(
         private set
     var rolledDice = Die.roll(currentPlayer.diceCount)
         private set
-    var lastActivatedDie: Die? = null
+    var activatedDie: Die? = null
         private set
     val activationBay = mutableListOf<Die>()
     var roundCount = 1
@@ -38,6 +39,8 @@ class Game(
 
     val planetsInGame: Set<Planet>
         get() = _planetsInGame
+    val followingList: List<Player>
+        get() = _followingList
     val currentPlayer: Player
         get() = players[currentPlayerIndex]
     var hasUsedFreeReroll: Boolean = false
@@ -74,6 +77,7 @@ class Game(
     }
 
     fun activateDieMoveShipToPlanetSurface(dieId: UUID, shipId: UUID, planetId: UUID) {
+        beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.MOVE_SHIP) throw IllegalMoveException("Chosen die has wrong face up")
         val ship = currentPlayer.ships.findById(shipId)
@@ -83,6 +87,7 @@ class Game(
     }
 
     fun activateDieMoveShipToPlanetOrbit(dieId: UUID, shipId: UUID, planetId: UUID) {
+        beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.MOVE_SHIP) throw IllegalMoveException("Chosen die has wrong face up")
         val ship = currentPlayer.ships.findById(shipId)
@@ -92,6 +97,7 @@ class Game(
     }
 
     fun activateDieAcquireEnergy(dieId: UUID) {
+        beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.ACQUIRE_ENERGY) throw IllegalMoveException("Chosen die has wrong face up")
         val count = currentPlayer.ships.count { ship ->
@@ -109,6 +115,7 @@ class Game(
     }
 
     fun activateDieAcquireCulture(dieId: UUID) {
+        beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.ACQUIRE_CULTURE) throw IllegalMoveException("Chosen die has wrong face up")
         val count = currentPlayer.ships.count { ship ->
@@ -125,6 +132,7 @@ class Game(
     }
 
     fun activateDieAdvanceDiplomacy(dieId: UUID, shipId: UUID) {
+        beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.ADVANCE_DIPLOMACY) throw IllegalMoveException("Chosen die has wrong face up")
         val ship = currentPlayer.ships.findById(shipId)
@@ -139,6 +147,7 @@ class Game(
     }
 
     fun activateDieAdvanceEconomy(dieId: UUID, shipId: UUID) {
+        beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.ADVANCE_ECONOMY) throw IllegalMoveException("Chosen die has wrong face up")
         val ship = currentPlayer.ships.findById(shipId)
@@ -153,6 +162,7 @@ class Game(
     }
 
     fun activateDieUpgradeEmpire(dieId: UUID, resourceType: PlanetProductionType) {
+        beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.UTILIZE_COLONY) throw IllegalMoveException("Chosen die has wrong face up")
         currentPlayer.upgradeEmpire(resourceType)
@@ -166,6 +176,7 @@ class Game(
     }
 
     fun activateDieUtilizeColonyAndellouxian6(dieId: UUID, planetId: UUID, shipToMoveId: UUID, energyToAcquire: Int, cultureToAcquire: Int) {
+        beforeDieActivation()
         val die = rolledDice.findById(dieId)
         validateBeforeActivateDieUtilizeColony(die, planetId, PlanetInfo.andellouxian6)
 
@@ -192,8 +203,9 @@ class Game(
         if (planet.info != expectedPlanetInfo) throw IllegalMoveException("Planet id and instance doesn't match")
     }
 
-    fun endTurn() {
-        // TODO only allow to end turn when no one else wants to follow
+    fun endTurn(playerId: UUID) {
+        if (currentPlayer.id != playerId) throw IllegalMoveException("Only current player can end the turn")
+        if (followingList.isNotEmpty()) throw IllegalMoveException("Other players must decide to follow or not")
 
         if (playerWhoTriggeredEndGame != null && players.indexOf(currentPlayer) == players.lastIndex) {
             // TODO check secret missions and score players
@@ -201,12 +213,13 @@ class Game(
             return
         }
 
+        _followingList.clear()
         currentPlayer.addDice(diceToAddToPlayerAfterTurnEnd)
         diceToAddToPlayerAfterTurnEnd = 0
         hasUsedFreeReroll = false
         dicePairToConvert = null
         activationBay.clear()
-        lastActivatedDie = null
+        activatedDie = null
         currentPlayerIndex++
         rolledDice = emptyList()
         if (currentPlayerIndex > (players.size - 1)) {
@@ -224,12 +237,44 @@ class Game(
         playerWhoTriggeredEndGame = players.find { it.totalPoints >= MIN_VICTORY_POINTS_TO_TRIGGER_END_GAME }
     }
 
+    private fun beforeDieActivation() {
+        if (activatedDie != null) throw IllegalMoveException("Player already activated a die")
+    }
+
     private fun afterDieActivation(die: Die) {
-        lastActivatedDie = die
+        activatedDie = die
         activationBay += die
         rolledDice -= die
 
         checkEndOfGameTrigger()
+        buildFollowingList()
+        checkAutomaticEndTurn()
+        if (followingList.isEmpty()) {
+            activatedDie = null
+        }
+    }
+
+    private fun checkAutomaticEndTurn() {
+        if (followingList.isEmpty() && rolledDice.isEmpty()) {
+            endTurn(currentPlayer.id)
+        }
+    }
+
+    private fun buildFollowingList() {
+        var nextPlayerIndex = currentPlayerIndex + 1
+        if (currentPlayerIndex > (players.size - 1)) {
+            nextPlayerIndex = 0
+        }
+        while (nextPlayerIndex != currentPlayerIndex) {
+            val player = players[nextPlayerIndex]
+            if (player.cultureLevel > 0) {
+                _followingList.add(players[nextPlayerIndex])
+            }
+            nextPlayerIndex++
+            if (nextPlayerIndex > (players.size - 1)) {
+                nextPlayerIndex = 0
+            }
+        }
     }
 
     fun convertDie(dicePair: Pair<UUID, UUID>, dieToConvertId: UUID, faceToSet: DieFace) {
@@ -242,6 +287,14 @@ class Game(
         dieToConvert.faceUp = faceToSet
         rolledDice -= die1
         rolledDice -= die2
+    }
+
+    fun skipActiveDieFollowing(playerId: UUID) {
+        if (activatedDie == null) throw IllegalMoveException("There is no active die now")
+        if (followingList.firstOrNull()?.id != playerId) throw IllegalMoveException("Player cannot decide about following die yet")
+        _followingList.removeFirst()
+
+        checkAutomaticEndTurn()
     }
 
     /**
