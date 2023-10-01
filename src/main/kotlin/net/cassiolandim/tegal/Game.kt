@@ -2,6 +2,8 @@ package net.cassiolandim.tegal
 
 import net.cassiolandim.tegal.exceptions.EntityNotFoundException
 import net.cassiolandim.tegal.exceptions.IllegalMoveException
+import net.cassiolandim.tegal.planet.*
+import net.cassiolandim.tegal.ship.Ship
 import java.util.*
 
 class Game(
@@ -251,7 +253,6 @@ class Game(
         }
     }
 
-
     fun activateDieUtilizeColonyAndellouxian6(
         dieId: UUID,
         planetId: UUID,
@@ -280,10 +281,11 @@ class Game(
         afterDieActivation(die)
     }
 
-    private fun validateBeforeActivateDieUtilizeColony(die: Die, planetId: UUID, expectedPlanetInfo: PlanetInfo) {
+    private fun validateBeforeActivateDieUtilizeColony(die: Die, planetId: UUID, expectedPlanetInfo: PlanetInfo): Planet {
         if (die.faceUp != DieFace.UTILIZE_COLONY) throw IllegalMoveException("Chosen die has wrong face up")
         val planet = planetsInGame.findById(planetId)
         if (planet.info != expectedPlanetInfo) throw IllegalMoveException("Planet id and instance doesn't match")
+        return planet
     }
 
     fun endTurn(playerId: UUID) {
@@ -408,7 +410,6 @@ class Game(
     }
 }
 
-fun List<Player>.findById(id: UUID) = find { it.id == id } ?: throw EntityNotFoundException("Player $id not found")
 fun List<Die>.findById(id: UUID) = find { it.id == id } ?: throw EntityNotFoundException("Die $id not found")
 fun Set<Ship>.findById(id: UUID) = find { it.id == id } ?: throw EntityNotFoundException("Ship $id not found")
 fun Set<Planet>.findById(id: UUID) = find { it.id == id } ?: throw EntityNotFoundException("Planet $id not found")

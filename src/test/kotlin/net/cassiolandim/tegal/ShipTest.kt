@@ -1,6 +1,7 @@
 package net.cassiolandim.tegal
 
 import net.cassiolandim.tegal.exceptions.IllegalMoveException
+import net.cassiolandim.tegal.planet.Planet
 import kotlin.test.*
 
 class ShipTest {

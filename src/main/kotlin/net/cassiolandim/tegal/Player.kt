@@ -1,6 +1,10 @@
 package net.cassiolandim.tegal
 
 import net.cassiolandim.tegal.exceptions.IllegalMoveException
+import net.cassiolandim.tegal.planet.Planet
+import net.cassiolandim.tegal.planet.PlanetProductionType
+import net.cassiolandim.tegal.ship.Ship
+import net.cassiolandim.tegal.ship.ShipLocation
 import java.util.*
 
 data class Player(

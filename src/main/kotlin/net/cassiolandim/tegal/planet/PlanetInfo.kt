@@ -1,4 +1,6 @@
-package net.cassiolandim.tegal
+package net.cassiolandim.tegal.planet
+
+import net.cassiolandim.tegal.Game
 
 fun MutableSet<PlanetInfo>.takeRandom(game: Game, x: Int): MutableSet<Planet> {
     val mSet = mutableSetOf<Planet>()
@@ -22,7 +24,7 @@ data class PlanetInfo(
     val trackType: PlanetTrackType,
     val trackLength: Int,
     val pointsWorth: Int,
-    val action: I18NStringKey,
+    val actionText: String,
 ) {
     companion object {
         val andellouxian6 = PlanetInfo(
@@ -31,7 +33,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 4,
             pointsWorth = 5,
-            action = I18NStringKey.ANDELLOUXIAN6_ACTION,
+            actionText = "Move 1 of your ships from a planet\'s orbit to your galaxy, then acquire energy and/or culture equal to that ship\'s orbit number.",
         )
         val aughmoore = PlanetInfo(
             name = "AUGHMOORE",
@@ -39,7 +41,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 5,
             pointsWorth = 7,
-            action = I18NStringKey.AUGHMOORE_ACTION,
+            actionText = "Acquire culture for every ship landed in your galaxy.",
         )
         val birkomius = PlanetInfo(
             name = "BIRKOMIUS",
@@ -47,7 +49,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 1,
             pointsWorth = 1,
-            action = I18NStringKey.BIRKOMIUS_ACTION,
+            actionText = "On your turn after utilizing this colony, if you are followed then acquire 1 culture per follow.",
         )
         val bisschop = PlanetInfo(
             name = "BISSCHOP",
@@ -55,7 +57,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 1,
             pointsWorth = 1,
-            action = I18NStringKey.BISSCHIOP_ACTION,
+            actionText = "On your turn after utilizing this colony, if you are followed then acquire 1 energy per follow.",
         )
         val brumbaugh = PlanetInfo(
             name = "BRUMBAUGH",
@@ -63,7 +65,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 3,
             pointsWorth = 3,
-            action = I18NStringKey.BRUMGAUGH_ACTION,
+            actionText = "Spend 2 energy to regress 2 enemy ships by -1.",
         )
         val bsw101 = PlanetInfo(
             name = "BSW-10-1",
@@ -71,7 +73,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 4,
             pointsWorth = 5,
-            action = I18NStringKey.BSW101_ACTION,
+            actionText = "Regress one of your ships -1, then advance another one of your ships +1.",
         )
         val clj0517 = PlanetInfo(
             name = "CLJ-0517",
@@ -79,7 +81,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 2,
             pointsWorth = 2,
-            action = I18NStringKey.CLJ0517_ACTION,
+            actionText = "Steal 1 culture from another player (only once during your turn).",
         )
         val drewkaiden = PlanetInfo(
             name = "DREWKAIDEN",
@@ -87,7 +89,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 1,
             pointsWorth = 1,
-            action = I18NStringKey.DREWKAIDEN_ACTION,
+            actionText = "Advance +1 diplomacy.",
         )
         val gleamzanier = PlanetInfo(
             name = "GLEAM-ZANIER",
@@ -95,7 +97,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 4,
             pointsWorth = 5,
-            action = I18NStringKey.GLEAMZANIER_ACTION,
+            actionText = "Acquired 2 energy, all other players acquire 1 energy.",
         )
         val gort = PlanetInfo(
             name = "GORT",
@@ -103,7 +105,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 5,
             pointsWorth = 7,
-            action = I18NStringKey.GORT_ACTION,
+            actionText = "Move 1 of your orbiting ships to an equal number of another planet\'s orbit (this may colonize the planet).",
         )
         val gyore = PlanetInfo(
             name = "GYORE",
@@ -111,7 +113,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 5,
             pointsWorth = 7,
-            action = I18NStringKey.GYORE_ACTION,
+            actionText = "Set 1 inactive die to a face of your choice.",
         )
         val helios = PlanetInfo(
             name = "HELIOS",
@@ -119,7 +121,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 2,
             pointsWorth = 2,
-            action = I18NStringKey.HELIOS_ACTION,
+            actionText = "Place an un-occupied planet from the center row into the bottom of the planet deck draw a new planet.",
         )
         val hoefker = PlanetInfo(
             name = "HOEFKER",
@@ -127,7 +129,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 2,
             pointsWorth = 2,
-            action = I18NStringKey.HOEFKER_ACTION,
+            actionText = "Spend 1 energy to acquire 2 culture.",
         )
         val jac110912 = PlanetInfo(
             name = "JAC-110912",
@@ -135,7 +137,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 4,
             pointsWorth = 5,
-            action = I18NStringKey.JAC110912_ACTION,
+            actionText = "Acquire 2 culture, all other players acquire 2 culture.",
         )
         val jakks = PlanetInfo(
             name = "JAKKS",
@@ -143,7 +145,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 1,
             pointsWorth = 1,
-            action = I18NStringKey.JAKKS_ACTION,
+            actionText = "Acquire 1 culture.",
         )
         val jorg = PlanetInfo(
             name = "JORG",
@@ -151,7 +153,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 3,
             pointsWorth = 3,
-            action = I18NStringKey.JORG_ACTION,
+            actionText = "Spend 2 culture to regress 1 enemy ship by -2.",
         )
         val kwidow = PlanetInfo(
             name = "K-WIDOW",
@@ -159,7 +161,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 5,
             pointsWorth = 7,
-            action = I18NStringKey.KWIDOW_ACTION,
+            actionText = "Regress an enemy ship by -1.",
         )
         val latorres = PlanetInfo(
             name = "LA-TORRES",
@@ -167,7 +169,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 2,
             pointsWorth = 2,
-            action = I18NStringKey.LATORRES_ACTION,
+            actionText = "Steal 1 energy from another player (only once during your turn).",
         )
         val leandra = PlanetInfo(
             name = "LEANDRA",
@@ -175,7 +177,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 1,
             pointsWorth = 1,
-            action = I18NStringKey.LEANDRA_ACTION,
+            actionText = "Advance +1 economy.",
         )
         val lureena = PlanetInfo(
             name = "LUREENA",
@@ -183,7 +185,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 2,
             pointsWorth = 2,
-            action = I18NStringKey.LUREENA_ACTION,
+            actionText = "Upgrade your empire, you may spend a mix of energy and culture.",
         )
         val maia = PlanetInfo(
             name = "MAIA",
@@ -191,7 +193,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 4,
             pointsWorth = 5,
-            action = I18NStringKey.MAIA_ACTION,
+            actionText = "Discard 2 inactive dice, acquire 2 energy and 2 culture.",
         )
         val mared = PlanetInfo(
             name = "MARED",
@@ -199,7 +201,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 2,
             pointsWorth = 2,
-            action = I18NStringKey.MARED_ACTION,
+            actionText = "If your empire level is the lowset (or tied for lowest) upgrade your empire for 1 less resource.",
         )
         val mj120210 = PlanetInfo(
             name = "MJ-120210",
@@ -207,7 +209,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.DIPLOMACY,
             trackLength = 2,
             pointsWorth = 2,
-            action = I18NStringKey.MJ120210_ACTION,
+            actionText = "Acquired 2 energy.",
         )
         val nagato = PlanetInfo(
             name = "NAGATO",
@@ -215,7 +217,7 @@ data class PlanetInfo(
             trackType = PlanetTrackType.ECONOMY,
             trackLength = 3,
             pointsWorth = 3,
-            action = I18NStringKey.NAGATO_ACTION,
+            actionText = "Spend 1 culture to move 2 of your ships (only once per turn).",
         )
 
         fun planets() = mutableSetOf(
@@ -241,6 +243,7 @@ data class PlanetInfo(
             lureena,
             maia,
             mared,
+            mj120210,
             nagato,
         )
     }

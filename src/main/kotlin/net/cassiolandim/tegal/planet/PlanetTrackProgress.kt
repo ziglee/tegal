@@ -1,4 +1,7 @@
-package net.cassiolandim.tegal
+package net.cassiolandim.tegal.planet
+
+import net.cassiolandim.tegal.ship.Ship
+import net.cassiolandim.tegal.ship.ShipLocation
 
 class PlanetTrackProgress(
     val ship: Ship,

@@ -1,5 +1,10 @@
 package net.cassiolandim.tegal
 
+import net.cassiolandim.tegal.planet.Planet
+import net.cassiolandim.tegal.planet.PlanetInfo
+import net.cassiolandim.tegal.planet.PlanetProductionType
+import net.cassiolandim.tegal.planet.PlanetTrackProgress
+import net.cassiolandim.tegal.ship.Ship
 import kotlin.test.*
 
 class GameTest {

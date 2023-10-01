@@ -1,4 +1,4 @@
-package net.cassiolandim.tegal
+package net.cassiolandim.tegal.planet
 
 enum class PlanetProductionType {
     ENERGY,

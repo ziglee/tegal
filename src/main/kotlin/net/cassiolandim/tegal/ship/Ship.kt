@@ -1,6 +1,9 @@
-package net.cassiolandim.tegal
+package net.cassiolandim.tegal.ship
 
+import net.cassiolandim.tegal.Player
 import net.cassiolandim.tegal.exceptions.IllegalMoveException
+import net.cassiolandim.tegal.planet.Planet
+import net.cassiolandim.tegal.planet.PlanetTrackProgress
 import java.util.*
 
 class Ship(

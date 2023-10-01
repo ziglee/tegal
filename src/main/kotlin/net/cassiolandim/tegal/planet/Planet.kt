@@ -1,9 +1,13 @@
-package net.cassiolandim.tegal
+package net.cassiolandim.tegal.planet
 
+import net.cassiolandim.tegal.Game
+import net.cassiolandim.tegal.Player
+import net.cassiolandim.tegal.ship.Ship
+import net.cassiolandim.tegal.ship.ShipLocation
 import java.util.*
 
-class Planet(
-    val game: Game,
+open class Planet(
+    private val game: Game,
     val info: PlanetInfo,
     val id: UUID = UUID.randomUUID(),
 ) : ShipLocation {
