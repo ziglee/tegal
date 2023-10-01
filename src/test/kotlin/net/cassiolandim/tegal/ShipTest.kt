@@ -78,7 +78,7 @@ class ShipTest {
         ship1Player2.leaveOldLocationAndMoveToPlanetOrbit(planet1)
         ship2Player2.leaveOldLocationAndMoveToPlanetSurface(planet1)
 
-        (1..(planet1.info.trackLength)).forEach {
+        (1..(planet1.info.trackLength + 1)).forEach { _ ->
             ship1Player1.incrementProgressOnOrbit()
         }
 

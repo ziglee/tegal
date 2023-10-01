@@ -451,4 +451,67 @@ class GameTest {
         assertEquals(2, firstPlayer.cultureLevel)
         assertEquals(2, secondPlayer.cultureLevel)
     }
+
+    @Test
+    fun follow_advance_diplomacy() {
+        val game = Game("Cássio", "Débora")
+        val firstPlayer = game.players[0]
+        val secondPlayer = game.players[1]
+        val firstShip = firstPlayer.ships.elementAt(0)
+        val secondShip = secondPlayer.ships.elementAt(0)
+        val planet = fetchPlanetFromGame(PlanetInfo.maia, game)
+        firstShip.leaveOldLocationAndMoveToPlanetOrbit(planet)
+        val location = secondShip.leaveOldLocationAndMoveToPlanetOrbit(planet)
+        game.fakeRollDiceAll(DieFace.ADVANCE_DIPLOMACY)
+        val die = game.rolledDice.first()
+        game.activateDieAdvanceDiplomacy(
+            dieId = die.id,
+            shipId = firstShip.id
+        )
+
+        game.followAdvanceDiplomacy(secondPlayer.id, secondShip.id)
+
+        assertEquals(1, location.progress)
+    }
+
+    @Test
+    fun follow_advance_economy() {
+        val game = Game("Cássio", "Débora")
+        val firstPlayer = game.players[0]
+        val secondPlayer = game.players[1]
+        val firstShip = firstPlayer.ships.elementAt(0)
+        val secondShip = secondPlayer.ships.elementAt(0)
+        val planet = fetchPlanetFromGame(PlanetInfo.bisschop, game)
+        firstShip.leaveOldLocationAndMoveToPlanetOrbit(planet)
+        val location = secondShip.leaveOldLocationAndMoveToPlanetOrbit(planet)
+        game.fakeRollDiceAll(DieFace.ADVANCE_ECONOMY)
+        val die = game.rolledDice.first()
+        game.activateDieAdvanceEconomy(
+            dieId = die.id,
+            shipId = firstShip.id
+        )
+
+        game.followAdvanceEconomy(secondPlayer.id, secondShip.id)
+
+        assertEquals(1, location.progress)
+    }
+
+    @Test
+    fun follow_upgrade_empire() {
+        val game = Game("Cássio", "Débora")
+        val secondPlayer = game.players[1]
+        game.fakeRollDiceAll(DieFace.UTILIZE_COLONY)
+        val die = game.rolledDice.first()
+        game.activateDieUpgradeEmpire(
+            dieId = die.id,
+            resourceType = PlanetProductionType.ENERGY
+        )
+
+        game.followUpgradeEmpire(
+            playerId = secondPlayer.id,
+            resourceType = PlanetProductionType.ENERGY
+        )
+
+        assertEquals(2, secondPlayer.empireLevel)
+    }
 }

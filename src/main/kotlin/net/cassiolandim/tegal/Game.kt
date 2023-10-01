@@ -23,7 +23,7 @@ class Game(
         private set
     var dicePairToConvert: Pair<Die, Die>? = null
         private set
-    var diceToAddToPlayerAfterTurnEnd = 0
+    var playersToAddDiceAfterTurnEnd: List<Player> = emptyList()
         private set
     var playerWhoTriggeredEndGame: Player? = null
         private set
@@ -177,14 +177,26 @@ class Game(
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.ADVANCE_DIPLOMACY) throw IllegalMoveException("Chosen die has wrong face up")
         val ship = currentPlayer.ships.findById(shipId)
-        if (!currentPlayer.ships.contains(ship)) throw IllegalMoveException("Cannot move another player ship")
-        with(ship.currentLocation) {
-            if (this is PlanetTrackProgress && this.planet.info.trackType != PlanetTrackType.DIPLOMACY) throw IllegalMoveException(
+        advanceDiplomacy(currentPlayer, ship)
+        afterDieActivation(die)
+    }
+
+    fun followAdvanceDiplomacy(playerId: UUID, shipId: UUID) {
+        beforeFollowValidation(playerId, DieFace.ADVANCE_DIPLOMACY)
+        val player = followingList.first()
+        val ship = player.ships.findById(shipId)
+        advanceDiplomacy(player, ship)
+        afterFollowing(player)
+    }
+
+    private fun advanceDiplomacy(player: Player, ship: Ship) {
+        if (!player.ships.contains(ship)) throw IllegalMoveException("Cannot move another player ship")
+        ship.currentLocation.let {
+            if (it is PlanetTrackProgress && it.planet.info.trackType != PlanetTrackType.DIPLOMACY) throw IllegalMoveException(
                 "Cannot advance diplomacy on this planet"
             )
         }
         ship.incrementProgressOnOrbit()
-        afterDieActivation(die)
     }
 
     fun activateDieAdvanceEconomy(dieId: UUID, shipId: UUID) {
@@ -192,29 +204,53 @@ class Game(
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.ADVANCE_ECONOMY) throw IllegalMoveException("Chosen die has wrong face up")
         val ship = currentPlayer.ships.findById(shipId)
-        if (!currentPlayer.ships.contains(ship)) throw IllegalMoveException("Cannot move another player ship")
-        with(ship.currentLocation) {
-            if (this is PlanetTrackProgress && this.planet.info.trackType != PlanetTrackType.ECONOMY) throw IllegalMoveException(
+        advanceEconomy(currentPlayer, ship)
+        afterDieActivation(die)
+    }
+
+    fun followAdvanceEconomy(playerId: UUID, shipId: UUID) {
+        beforeFollowValidation(playerId, DieFace.ADVANCE_ECONOMY)
+        val player = followingList.first()
+        val ship = player.ships.findById(shipId)
+        advanceEconomy(player, ship)
+        afterFollowing(player)
+    }
+
+    private fun advanceEconomy(player: Player, ship: Ship) {
+        if (!player.ships.contains(ship)) throw IllegalMoveException("Cannot move another player ship")
+        ship.currentLocation.let {
+            if (it is PlanetTrackProgress && it.planet.info.trackType != PlanetTrackType.ECONOMY) throw IllegalMoveException(
                 "Cannot advance economy on this planet"
             )
         }
         ship.incrementProgressOnOrbit()
-        afterDieActivation(die)
     }
 
     fun activateDieUpgradeEmpire(dieId: UUID, resourceType: PlanetProductionType) {
         beforeDieActivation()
         val die = rolledDice.findById(dieId)
         if (die.faceUp != DieFace.UTILIZE_COLONY) throw IllegalMoveException("Chosen die has wrong face up")
-        currentPlayer.upgradeEmpire(resourceType)
-        if (currentPlayer.empireLevel == 2 ||
-            currentPlayer.empireLevel == 4 ||
-            currentPlayer.empireLevel == 6
-        ) {
-            diceToAddToPlayerAfterTurnEnd++
-        }
+        upgradeEmpire(currentPlayer, resourceType)
         afterDieActivation(die)
     }
+
+    fun followUpgradeEmpire(playerId: UUID, resourceType: PlanetProductionType) {
+        beforeFollowValidation(playerId, DieFace.UTILIZE_COLONY)
+        val player = followingList.first()
+        upgradeEmpire(player, resourceType)
+        afterFollowing(player)
+    }
+
+    private fun upgradeEmpire(player: Player, resourceType: PlanetProductionType) {
+        player.upgradeEmpire(resourceType)
+        if (player.empireLevel == 2 ||
+            player.empireLevel == 4 ||
+            player.empireLevel == 6
+        ) {
+            playersToAddDiceAfterTurnEnd += player
+        }
+    }
+
 
     fun activateDieUtilizeColonyAndellouxian6(
         dieId: UUID,
@@ -261,8 +297,10 @@ class Game(
         }
 
         _followingList.clear()
-        currentPlayer.addDice(diceToAddToPlayerAfterTurnEnd)
-        diceToAddToPlayerAfterTurnEnd = 0
+        playersToAddDiceAfterTurnEnd.forEach {
+            it.addDice(1)
+        }
+        playersToAddDiceAfterTurnEnd = emptyList()
         hasUsedFreeReroll = false
         dicePairToConvert = null
         activationBay.clear()

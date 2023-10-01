@@ -10,7 +10,7 @@ class PlanetTrackProgress(
 
     fun increment() {
         _progress++
-        if (progress == planet.info.trackLength) {
+        if (progress > planet.info.trackLength) {
             planet.moveTo(ship.player)
         }
     }
